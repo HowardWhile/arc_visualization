@@ -9,7 +9,6 @@ ImageTransportHintsProperty::ImageTransportHintsProperty(const char* name,
     : rviz_common::properties::EditableEnumProperty(name, "raw", description, parent, changed_slot) {
   addOptionStd("raw");
   addOptionStd("compressed");
-  addOptionStd("theora");
 }
 
 ImageTransportHintsProperty::~ImageTransportHintsProperty() {}
