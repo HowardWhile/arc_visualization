@@ -1,6 +1,6 @@
 #include "image_transport_hints_property.h"
 
-namespace arc_visualization {
+namespace arc_rviz_plugins {
 
 ImageTransportHintsProperty::ImageTransportHintsProperty(const char* name,
                                                          const char* description,

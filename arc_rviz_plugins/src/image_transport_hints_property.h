@@ -1,12 +1,12 @@
-#ifndef ARC_VISUALIZATION_IMAGE_TRANSPORT_HINTS_PROPERTY_H
-#define ARC_VISUALIZATION_IMAGE_TRANSPORT_HINTS_PROPERTY_H
+#ifndef ARC_RVIZ_PLUGINS_IMAGE_TRANSPORT_HINTS_PROPERTY_H
+#define ARC_RVIZ_PLUGINS_IMAGE_TRANSPORT_HINTS_PROPERTY_H
 
 #include <string>
 
 #include <rviz_common/properties/property.hpp>
 #include <rviz_common/properties/editable_enum_property.hpp>
 
-namespace arc_visualization {
+namespace arc_rviz_plugins {
 
 class ImageTransportHintsProperty : public rviz_common::properties::EditableEnumProperty
 {

@@ -34,8 +34,8 @@
  *********************************************************************/
 
 
-#ifndef ARC_VISUALIZATION_CAMERA_INFO_DISPLAY_H_
-#define ARC_VISUALIZATION_CAMERA_INFO_DISPLAY_H_
+#ifndef ARC_RVIZ_PLUGINS_CAMERA_INFO_DISPLAY_H_
+#define ARC_RVIZ_PLUGINS_CAMERA_INFO_DISPLAY_H_
 
 #ifndef Q_MOC_RUN
 #include <memory>
@@ -75,7 +75,7 @@
 #include "image_transport_hints_property.h"
 #endif
 
-namespace arc_visualization
+namespace arc_rviz_plugins
 {
   class ImageTopicProperty : public rviz_common::properties::EditableEnumProperty
   {

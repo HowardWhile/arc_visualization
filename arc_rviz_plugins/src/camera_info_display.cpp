@@ -53,7 +53,7 @@
 
 namespace enc = sensor_msgs::image_encodings;
 
-namespace arc_visualization
+namespace arc_rviz_plugins
 {
   ImageTopicProperty::ImageTopicProperty(
     const QString& name,
@@ -934,4 +934,4 @@ namespace arc_visualization
 
 
 #include <pluginlib/class_list_macros.hpp>
-PLUGINLIB_EXPORT_CLASS( arc_visualization::CameraInfoDisplay, rviz_common::Display )
+PLUGINLIB_EXPORT_CLASS( arc_rviz_plugins::CameraInfoDisplay, rviz_common::Display )

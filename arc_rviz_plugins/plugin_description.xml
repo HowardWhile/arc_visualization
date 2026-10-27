@@ -1,0 +1,12 @@
+<library path="arc_rviz_plugins_display_plugins">
+  <class name="arc_rviz_plugins/CameraInfo" type="arc_rviz_plugins::CameraInfoDisplay" base_class_type="rviz_common::Display">
+    <description>
+      Displays sensor_msgs/msg/CameraInfo as a camera frustum in RViz2.
+    </description>
+  </class>
+  <class name="arc_rviz_plugins/TFTrajectory" type="arc_rviz_plugins::TFTrajectoryDisplay" base_class_type="rviz_common::Display">
+    <description>
+      Displays the trajectory of a TF frame in RViz2.
+    </description>
+  </class>
+</library>

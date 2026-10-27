@@ -33,8 +33,8 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-#ifndef ARC_VISUALIZATION_TF_TRAJECTORY_DISPLAY_H_
-#define ARC_VISUALIZATION_TF_TRAJECTORY_DISPLAY_H_
+#ifndef ARC_RVIZ_PLUGINS_TF_TRAJECTORY_DISPLAY_H_
+#define ARC_RVIZ_PLUGINS_TF_TRAJECTORY_DISPLAY_H_
 
 #ifndef Q_MOC_RUN
 #include <rviz_common/display.hpp>
@@ -46,7 +46,7 @@
 #include <geometry_msgs/msg/point_stamped.hpp>
 #endif
 
-namespace arc_visualization
+namespace arc_rviz_plugins
 {
 
   class TFTrajectoryDisplay: public rviz_common::Display

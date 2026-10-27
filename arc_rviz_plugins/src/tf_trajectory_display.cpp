@@ -36,7 +36,7 @@
 #include "tf_trajectory_display.h"
 #include <rviz_common/display_context.hpp>
 
-namespace arc_visualization
+namespace arc_rviz_plugins
 {
   #define MAX_ELEMENTS_PER_LINE (65536 / 4) // from ros-visualization/rviz/src/rviz/ogre_helpers/billboard_line.cpp
   TFTrajectoryDisplay::TFTrajectoryDisplay()
@@ -172,4 +172,4 @@ namespace arc_visualization
 }
 
 #include <pluginlib/class_list_macros.hpp>
-PLUGINLIB_EXPORT_CLASS( arc_visualization::TFTrajectoryDisplay, rviz_common::Display )
+PLUGINLIB_EXPORT_CLASS( arc_rviz_plugins::TFTrajectoryDisplay, rviz_common::Display )

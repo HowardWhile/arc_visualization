@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(arc_visualization)
+project(arc_rviz_plugins)
 
 find_package(ament_cmake REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Widgets)
