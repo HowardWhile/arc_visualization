@@ -250,6 +250,10 @@ namespace arc_rviz_plugins
   void CameraInfoDisplay::reset()
   {
     RTDClass::reset();
+    {
+      std::lock_guard<std::mutex> lock(frequency_mutex_);
+      reception_times_.clear();
+    }
     if (edges_) {
       edges_->clear();
     }
@@ -275,6 +279,11 @@ namespace arc_rviz_plugins
   void CameraInfoDisplay::processMessage(
     sensor_msgs::msg::CameraInfo::ConstSharedPtr msg)
   {
+    {
+      std::lock_guard<std::mutex> lock(frequency_mutex_);
+      reception_times_.push_back(std::chrono::steady_clock::now());
+    }
+    updateTopicFrequency();
     if (!isSameCameraInfo(msg)) {
       createCameraInfoShapes(msg);
     }
@@ -311,8 +320,26 @@ namespace arc_rviz_plugins
      camera_info_ = msg;        // store for caching
   }
 
+  void CameraInfoDisplay::updateTopicFrequency()
+  {
+    const auto cutoff = std::chrono::steady_clock::now() - std::chrono::seconds(5);
+    std::lock_guard<std::mutex> lock(frequency_mutex_);
+    while (!reception_times_.empty() && reception_times_.front() <= cutoff) {
+      reception_times_.pop_front();
+    }
+    // Fixed five-second window, including silence and the initial warm-up period.
+    const double frequency = static_cast<double>(reception_times_.size()) / 5.0;
+    setStatus(rviz_common::properties::StatusProperty::Ok, "Topic",
+              QString("%1 messages in last 5 s at %2 hz.")
+                .arg(static_cast<qulonglong>(reception_times_.size()))
+                .arg(frequency, 0, 'f', 1));
+  }
+
   void CameraInfoDisplay::update(float wall_dt, float ros_dt)
   {
+    if (subscription_) {
+      updateTopicFrequency();
+    }
     std::lock_guard<std::mutex> lock(mutex_);
     if (image_updated_) {
       if (bottom_texture_) {

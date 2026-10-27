@@ -38,6 +38,8 @@
 #define ARC_RVIZ_PLUGINS_CAMERA_INFO_DISPLAY_H_
 
 #ifndef Q_MOC_RUN
+#include <chrono>
+#include <deque>
 #include <memory>
 #include <mutex>
 #include <set>
@@ -158,6 +160,7 @@ namespace arc_rviz_plugins
     virtual void compressedImageCallback(sensor_msgs::msg::CompressedImage::ConstSharedPtr msg);
     virtual void drawImageTexture();
     virtual void subscribeImage(std::string topic);
+    void updateTopicFrequency();
     /////////////////////////////////////////////////////////
     // variables
     //////////////////////////////////////////////////////// 
@@ -171,6 +174,8 @@ namespace arc_rviz_plugins
     image_transport::Subscriber image_sub_;
     rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr compressed_image_sub_;
     std::mutex mutex_;
+    std::mutex frequency_mutex_;
+    std::deque<std::chrono::steady_clock::time_point> reception_times_;
     ////////////////////////////////////////////////////////
     // variables updated by rviz properties
     ////////////////////////////////////////////////////////
