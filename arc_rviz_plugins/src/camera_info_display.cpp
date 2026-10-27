@@ -492,6 +492,7 @@ namespace arc_rviz_plugins
         topic,
         rclcpp::SensorDataQoS(),
         std::bind(&CameraInfoDisplay::compressedImageCallback, this, std::placeholders::_1));
+      setStatus(rviz_common::properties::StatusProperty::Ok, "Image Topic", "OK");
       return;
     }
     image_sub_ = image_transport::create_subscription(
@@ -500,6 +501,7 @@ namespace arc_rviz_plugins
       std::bind(&CameraInfoDisplay::imageCallback, this, std::placeholders::_1),
       image_transport_hints_property_->getTransport(),
       rmw_qos_profile_sensor_data);
+    setStatus(rviz_common::properties::StatusProperty::Ok, "Image Topic", "OK");
   }
 
   void CameraInfoDisplay::drawImageTexture()
@@ -932,6 +934,8 @@ namespace arc_rviz_plugins
       subscribeImage(topic);
     } else {
       image_sub_.shutdown();
+      compressed_image_sub_.reset();
+      deleteStatus("Image Topic");
       // Set image_updated_ true in order to clear the bottom texture in update() method.
       image_updated_ = true;
     }
