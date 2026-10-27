@@ -471,11 +471,19 @@ namespace arc_rviz_plugins
     }
   }
 
+  void CameraInfoDisplay::setImageStatus(
+    rviz_common::properties::StatusProperty::Level level, const QString& message)
+  {
+    setStatus(level, "Image", message);
+    setStatus(level, "Image Topic", message);
+  }
+
   void CameraInfoDisplay::subscribeImage(std::string topic)
   {
 
     image_sub_.shutdown();
     compressed_image_sub_.reset();
+    deleteStatus("Image");
     if (topic.empty()) {
       setStatus(rviz_common::properties::StatusProperty::Warn, "Image Topic", "Topic name is empty");
       return;
@@ -492,12 +500,18 @@ namespace arc_rviz_plugins
         return topic.size() >= suffix.size() &&
           topic.compare(topic.size() - suffix.size(), suffix.size(), suffix) == 0;
       };
-      if (has_suffix("/compressed") || has_suffix("/compressedDepth")) {
+      const bool explicit_compressed_topic =
+        has_suffix("/compressed") || has_suffix("/compressedDepth");
+      const std::string transport = image_transport_hints_property_->getTransport();
+      if (explicit_compressed_topic || transport == "compressed") {
+        // Receive the encoded payload here so decoder failures reach the RViz status.
+        const std::string compressed_topic = explicit_compressed_topic ? topic :
+          (topic.back() == '/' ? topic + "compressed" : topic + "/compressed");
         compressed_image_sub_ = node->create_subscription<sensor_msgs::msg::CompressedImage>(
-          topic,
+          compressed_topic,
           rclcpp::SensorDataQoS(),
           std::bind(&CameraInfoDisplay::compressedImageCallback, this, std::placeholders::_1));
-        setStatus(rviz_common::properties::StatusProperty::Ok, "Image Topic", "OK");
+        setImageStatus(rviz_common::properties::StatusProperty::Warn, "Subscribed; waiting for image");
         return;
       }
       image_sub_ = image_transport::create_subscription(
@@ -506,7 +520,7 @@ namespace arc_rviz_plugins
         std::bind(&CameraInfoDisplay::imageCallback, this, std::placeholders::_1),
         image_transport_hints_property_->getTransport(),
         rmw_qos_profile_sensor_data);
-      setStatus(rviz_common::properties::StatusProperty::Ok, "Image Topic", "OK");
+      setImageStatus(rviz_common::properties::StatusProperty::Warn, "Subscribed; waiting for image");
     } catch (const std::exception& e) {
       image_sub_.shutdown();
       compressed_image_sub_.reset();
@@ -551,7 +565,7 @@ namespace arc_rviz_plugins
     const cv::Mat& input, const std::string& encoding, cv::Mat& output)
   {
     if (input.empty()) {
-      setStatus(rviz_common::properties::StatusProperty::Error, "Image", "Decoded image is empty");
+      setImageStatus(rviz_common::properties::StatusProperty::Error, "Decoded image is empty");
       return false;
     }
 
@@ -648,8 +662,7 @@ namespace arc_rviz_plugins
     } else if (im.channels() == 4) {
       cv::cvtColor(im, output, cv::COLOR_BGRA2RGB);
     } else {
-      setStatus(rviz_common::properties::StatusProperty::Error,
-                "Image", QString("Unsupported image encoding '%1'")
+      setImageStatus(rviz_common::properties::StatusProperty::Error, QString("Unsupported image encoding '%1'")
                   .arg(QString::fromStdString(encoding)));
       return false;
     }
@@ -661,8 +674,7 @@ namespace arc_rviz_plugins
   {
     if (!msg || msg->data.empty() ||
         msg->data.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
-      setStatus(rviz_common::properties::StatusProperty::Error,
-                "Image", "Compressed image payload is empty or too large");
+      setImageStatus(rviz_common::properties::StatusProperty::Error, "Compressed image payload is empty or too large");
       return false;
     }
     try {
@@ -671,8 +683,7 @@ namespace arc_rviz_plugins
         const std::vector<uint8_t> png_signature = {0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a};
         auto png_begin = std::search(data.begin(), data.end(), png_signature.begin(), png_signature.end());
         if (png_begin == data.end()) {
-          setStatus(rviz_common::properties::StatusProperty::Error,
-                    "Image", "Failed to find PNG payload in compressedDepth image");
+          setImageStatus(rviz_common::properties::StatusProperty::Error, "Failed to find PNG payload in compressedDepth image");
           return false;
         }
         data.erase(data.begin(), png_begin);
@@ -681,8 +692,7 @@ namespace arc_rviz_plugins
       cv::Mat encoded(1, static_cast<int>(data.size()), CV_8UC1, data.data());
       cv::Mat decoded = cv::imdecode(encoded, cv::IMREAD_UNCHANGED);
       if (decoded.empty()) {
-        setStatus(rviz_common::properties::StatusProperty::Error,
-                  "Image", "Failed to decode compressed image");
+        setImageStatus(rviz_common::properties::StatusProperty::Error, "Failed to decode compressed image");
         return false;
       }
 
@@ -702,8 +712,7 @@ namespace arc_rviz_plugins
       }
       return convertImageToRGB(decoded, encoding, output);
     } catch (const cv::Exception& e) {
-      setStatus(rviz_common::properties::StatusProperty::Error,
-                "Image", QString("OpenCV decode exception: ") + e.what());
+      setImageStatus(rviz_common::properties::StatusProperty::Error, QString("OpenCV decode exception: ") + e.what());
       return false;
     }
   }
@@ -728,8 +737,7 @@ namespace arc_rviz_plugins
     } else if (image.cols == roi_width && image.rows == roi_height) {
       image_ = image.clone();
     } else {
-      setStatus(rviz_common::properties::StatusProperty::Error,
-                "Image", QString("Invalid image size (%1, %2), expected (%3, %4) or ROI size (%5, %6)")
+      setImageStatus(rviz_common::properties::StatusProperty::Error, QString("Invalid image size (%1, %2), expected (%3, %4) or ROI size (%5, %6)")
                   .arg(image.cols).arg(image.rows)
                   .arg(camera_info_->width).arg(camera_info_->height)
                   .arg(roi_width).arg(roi_height));
@@ -745,7 +753,7 @@ namespace arc_rviz_plugins
       }
     }
     image_updated_ = true;
-    setStatus(rviz_common::properties::StatusProperty::Ok, "Image", "OK");
+    setImageStatus(rviz_common::properties::StatusProperty::Ok, "OK");
   }
 
   // convert sensor_msgs::Image into cv::Mat
@@ -754,7 +762,12 @@ namespace arc_rviz_plugins
   {
     std::lock_guard<std::mutex> lock(mutex_);
     cv_bridge::CvImageConstPtr cv_ptr;
-    if (!msg || !camera_info_) {
+    if (!msg) {
+      setImageStatus(rviz_common::properties::StatusProperty::Error, "Received null image message");
+      return;
+    }
+    if (!camera_info_) {
+      setImageStatus(rviz_common::properties::StatusProperty::Warn, "Waiting for valid CameraInfo");
       return;
     }
     try
@@ -768,13 +781,11 @@ namespace arc_rviz_plugins
     }
     catch (const cv::Exception& e)
     {
-      setStatus(rviz_common::properties::StatusProperty::Error,
-                "Image", QString("OpenCV image exception: ") + e.what());
+      setImageStatus(rviz_common::properties::StatusProperty::Error, QString("OpenCV image exception: ") + e.what());
     }
     catch (const cv_bridge::Exception& e)
     {
-      setStatus(rviz_common::properties::StatusProperty::Error,
-                "Image", QString("cv_bridge exception: ") + e.what());
+      setImageStatus(rviz_common::properties::StatusProperty::Error, QString("cv_bridge exception: ") + e.what());
     }
   }
 
@@ -782,7 +793,12 @@ namespace arc_rviz_plugins
       sensor_msgs::msg::CompressedImage::ConstSharedPtr msg)
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (!msg || !camera_info_) {
+    if (!msg) {
+      setImageStatus(rviz_common::properties::StatusProperty::Error, "Received null image message");
+      return;
+    }
+    if (!camera_info_) {
+      setImageStatus(rviz_common::properties::StatusProperty::Warn, "Waiting for valid CameraInfo");
       return;
     }
     try {
@@ -791,8 +807,7 @@ namespace arc_rviz_plugins
         updateImage(rgb_image);
       }
     } catch (const cv::Exception& e) {
-      setStatus(rviz_common::properties::StatusProperty::Error,
-                "Image", QString("OpenCV image exception: ") + e.what());
+      setImageStatus(rviz_common::properties::StatusProperty::Error, QString("OpenCV image exception: ") + e.what());
     }
   }
 
@@ -970,6 +985,7 @@ namespace arc_rviz_plugins
       image_sub_.shutdown();
       compressed_image_sub_.reset();
       deleteStatus("Image Topic");
+      deleteStatus("Image");
       // Set image_updated_ true in order to clear the bottom texture in update() method.
       image_updated_ = true;
     }

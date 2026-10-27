@@ -161,6 +161,8 @@ namespace arc_rviz_plugins
     virtual void drawImageTexture();
     virtual void subscribeImage(std::string topic);
     void updateTopicFrequency();
+    void setImageStatus(rviz_common::properties::StatusProperty::Level level,
+                        const QString& message);
     /////////////////////////////////////////////////////////
     // variables
     //////////////////////////////////////////////////////// 
