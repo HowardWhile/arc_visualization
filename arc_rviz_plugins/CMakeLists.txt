@@ -6,7 +6,6 @@ find_package(Qt5 REQUIRED COMPONENTS Widgets)
 find_package(cv_bridge REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(image_geometry REQUIRED)
-find_package(image_transport REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rviz_common REQUIRED)
@@ -18,13 +17,11 @@ get_filename_component(OGRE_INCLUDE_PARENT_DIR "${OGRE_INCLUDE_DIRS}" DIRECTORY)
 
 qt5_wrap_cpp(display_moc_files
   src/camera_info_display.h
-  src/image_transport_hints_property.h
   src/tf_trajectory_display.h
 )
 
 add_library(${PROJECT_NAME}_display_plugins SHARED
   src/camera_info_display.cpp
-  src/image_transport_hints_property.cpp
   src/tf_trajectory_display.cpp
   ${display_moc_files}
 )
@@ -44,7 +41,6 @@ ament_target_dependencies(${PROJECT_NAME}_display_plugins
   cv_bridge
   geometry_msgs
   image_geometry
-  image_transport
   pluginlib
   rclcpp
   rviz_common
@@ -65,5 +61,5 @@ install(DIRECTORY src/ DESTINATION include/${PROJECT_NAME}
   FILES_MATCHING PATTERN "*.h"
 )
 ament_export_targets(${PROJECT_NAME}_display_plugins HAS_LIBRARY_TARGET)
-ament_export_dependencies(cv_bridge geometry_msgs image_geometry image_transport pluginlib rclcpp rviz_common rviz_ogre_vendor rviz_rendering sensor_msgs Qt5)
+ament_export_dependencies(cv_bridge geometry_msgs image_geometry pluginlib rclcpp rviz_common rviz_ogre_vendor rviz_rendering sensor_msgs Qt5)
 ament_package()

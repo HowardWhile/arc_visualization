@@ -36,7 +36,6 @@
 #include <rviz_common/uniform_string_stream.hpp>
 #include <rviz_common/properties/parse_color.hpp>
 #include <rviz_common/properties/status_property.hpp>
-#include <image_transport/image_transport.hpp>
 #include "camera_info_display.h"
 #include <OGRE/OgreMaterialManager.h>
 #include <OGRE/OgreMaterial.h>
@@ -212,11 +211,7 @@ namespace arc_rviz_plugins
       "sensor_msgs::msg::Image or sensor_msgs::msg::CompressedImage topic to subscribe to.",
       this, SLOT( updateImageTopic() ));
     image_topic_property_->hide();
-    image_transport_hints_property_ = new ImageTransportHintsProperty(
-      "transport hints",
-      "transport hint for image subscription",
-      this, SLOT( updateImageTopic() ));
-    image_transport_hints_property_->hide();
+
 
     color_property_ = new rviz_common::properties::ColorProperty(
       "color",
@@ -338,6 +333,12 @@ namespace arc_rviz_plugins
 
   void CameraInfoDisplay::update(float wall_dt, float ros_dt)
   {
+    // DDS discovery may finish after the display configuration is loaded.
+    if (use_image_ && !image_sub_ && !compressed_image_sub_ &&
+        !image_topic_property_->getTopicStd().empty() &&
+        std::chrono::steady_clock::now() >= next_image_discovery_) {
+      subscribeImage(image_topic_property_->getTopicStd());
+    }
     if (subscription_) {
       updateTopicFrequency();
     }
@@ -480,8 +481,9 @@ namespace arc_rviz_plugins
 
   void CameraInfoDisplay::subscribeImage(std::string topic)
   {
+    next_image_discovery_ = std::chrono::steady_clock::now() + std::chrono::seconds(1);
 
-    image_sub_.shutdown();
+    image_sub_.reset();
     compressed_image_sub_.reset();
     deleteStatus("Image");
     if (topic.empty()) {
@@ -496,33 +498,36 @@ namespace arc_rviz_plugins
     try {
       auto node = node_interface->get_raw_node();
       depth_range_initialized_ = false;
-      const auto has_suffix = [&topic](const std::string& suffix) {
-        return topic.size() >= suffix.size() &&
-          topic.compare(topic.size() - suffix.size(), suffix.size(), suffix) == 0;
-      };
-      const bool explicit_compressed_topic =
-        has_suffix("/compressed") || has_suffix("/compressedDepth");
-      const std::string transport = image_transport_hints_property_->getTransport();
-      if (explicit_compressed_topic || transport == "compressed") {
-        // Receive the encoded payload here so decoder failures reach the RViz status.
-        const std::string compressed_topic = explicit_compressed_topic ? topic :
-          (topic.back() == '/' ? topic + "compressed" : topic + "/compressed");
-        compressed_image_sub_ = node->create_subscription<sensor_msgs::msg::CompressedImage>(
-          compressed_topic,
-          rclcpp::SensorDataQoS(),
-          std::bind(&CameraInfoDisplay::compressedImageCallback, this, std::placeholders::_1));
-        setImageStatus(rviz_common::properties::StatusProperty::Warn, "Subscribed; waiting for image");
+      const std::string resolved_topic = node->get_node_topics_interface()->resolve_topic_name(topic);
+      const auto topics = node->get_topic_names_and_types();
+      const auto entry = topics.find(resolved_topic);
+      if (entry == topics.end() || entry->second.empty()) {
+        setImageStatus(rviz_common::properties::StatusProperty::Warn,
+                       "Waiting for topic type from DDS");
         return;
       }
-      image_sub_ = image_transport::create_subscription(
-        node.get(),
-        topic,
-        std::bind(&CameraInfoDisplay::imageCallback, this, std::placeholders::_1),
-        image_transport_hints_property_->getTransport(),
-        rmw_qos_profile_sensor_data);
+      const auto& types = entry->second;
+      if (types.size() != 1) {
+        setImageStatus(rviz_common::properties::StatusProperty::Error,
+                       "Topic has multiple message types; cannot select an image decoder");
+        return;
+      }
+      if (types.front() == rosidl_generator_traits::name<sensor_msgs::msg::CompressedImage>()) {
+        compressed_image_sub_ = node->create_subscription<sensor_msgs::msg::CompressedImage>(
+          topic, rclcpp::SensorDataQoS(),
+          std::bind(&CameraInfoDisplay::compressedImageCallback, this, std::placeholders::_1));
+      } else if (types.front() == rosidl_generator_traits::name<sensor_msgs::msg::Image>()) {
+        image_sub_ = node->create_subscription<sensor_msgs::msg::Image>(
+          topic, rclcpp::SensorDataQoS(),
+          std::bind(&CameraInfoDisplay::imageCallback, this, std::placeholders::_1));
+      } else {
+        setImageStatus(rviz_common::properties::StatusProperty::Error,
+                       QString("Unsupported image topic type: ") + QString::fromStdString(types.front()));
+        return;
+      }
       setImageStatus(rviz_common::properties::StatusProperty::Warn, "Subscribed; waiting for image");
     } catch (const std::exception& e) {
-      image_sub_.shutdown();
+      image_sub_.reset();
       compressed_image_sub_.reset();
       setStatus(rviz_common::properties::StatusProperty::Error, "Image Topic",
                 QString("Failed to subscribe: ") + e.what());
@@ -982,7 +987,7 @@ namespace arc_rviz_plugins
       std::string topic = image_topic_property_->getTopicStd();
       subscribeImage(topic);
     } else {
-      image_sub_.shutdown();
+      image_sub_.reset();
       compressed_image_sub_.reset();
       deleteStatus("Image Topic");
       deleteStatus("Image");
@@ -996,11 +1001,9 @@ namespace arc_rviz_plugins
     use_image_ = use_image_property_->getBool();
     if (use_image_) {
       image_topic_property_->show();
-      image_transport_hints_property_->show();
     }
     else {
       image_topic_property_->hide();
-      image_transport_hints_property_->hide();
     }
     updateImageTopic();
   }

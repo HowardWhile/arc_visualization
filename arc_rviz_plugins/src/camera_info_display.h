@@ -72,9 +72,9 @@
 #include <cv_bridge/cv_bridge.h>
 #endif
 #include <sensor_msgs/image_encodings.hpp>
-#include <image_transport/subscriber.hpp>
 
-#include "image_transport_hints_property.h"
+
+
 #endif
 
 namespace arc_rviz_plugins
@@ -173,7 +173,8 @@ namespace arc_rviz_plugins
     Ogre::TexturePtr texture_;
     Ogre::MaterialPtr material_bottom_;
     Ogre::TexturePtr bottom_texture_;
-    image_transport::Subscriber image_sub_;
+    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
+    std::chrono::steady_clock::time_point next_image_discovery_;
     rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr compressed_image_sub_;
     std::mutex mutex_;
     std::mutex frequency_mutex_;
@@ -197,7 +198,6 @@ namespace arc_rviz_plugins
     ////////////////////////////////////////////////////////
     // properties
     ////////////////////////////////////////////////////////
-    ImageTransportHintsProperty* image_transport_hints_property_;
     rviz_common::properties::FloatProperty* far_clip_distance_property_;
     rviz_common::properties::FloatProperty* alpha_property_;
     rviz_common::properties::ColorProperty* color_property_;
