@@ -9,4 +9,7 @@
       Displays the trajectory of a TF frame in RViz2.
     </description>
   </class>
+  <class name="arc_rviz_plugins/DepthView" type="arc_rviz_plugins::DepthViewDisplay" base_class_type="rviz_common::Display">
+    <description>Depth image point cloud with graph-based input selection, frame skipping, sampling, and optional aligned RGB.</description>
+  </class>
 </library>

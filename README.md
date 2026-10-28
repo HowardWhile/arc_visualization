@@ -8,6 +8,7 @@ RViz2 displays copied from `jsk_rviz_plugins`, with package and C++ namespace re
 
 - `arc_rviz_plugins/CameraInfo`
 - `arc_rviz_plugins/TFTrajectory`
+- `arc_rviz_plugins/DepthView` — rectified depth to Points, optional aligned RGB, frame skipping, pixel stride and maximum Z filtering. See [DepthView usage and validation](docs/depth-view.md).
 
 Build in a ROS 2 workspace with `colcon build --packages-select arc_rviz_plugins`, source the workspace, then select these displays under `arc_rviz_plugins` in RViz2. In existing RViz configurations, replace the corresponding `Class: jsk_rviz_plugins/...` or `Class: arc_visualization/...` values with `Class: arc_rviz_plugins/...`.
 
