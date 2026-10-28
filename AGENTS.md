@@ -1,3 +1,19 @@
+# AGENTS.md
+
+## Agent skills
+
+### Issue tracker
+
+議題以本機 Markdown 檔案管理，位於 `.scratch/<feature>/`。詳見 `docs/agents/issue-tracker.md`。
+
+### Triage labels
+
+使用五個標準 triage 角色的預設標籤字串。詳見 `docs/agents/triage-labels.md`。
+
+### Domain docs
+
+本專案採用 single-context 領域文件佈局。詳見 `docs/agents/domain.md`。
+
 <!-- CODEGRAPH_START -->
 ## CodeGraph
 
@@ -9,19 +25,6 @@ In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the re
 If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
 <!-- CODEGRAPH_END -->
 
-## Agent skills
+## Git 提交禁止
 
-### Issue tracker
-
-Issues and specs live in local Markdown files under `.scratch/<feature>/`.
-See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-Use the five default triage roles, recorded in issue files.
-See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-Use a single-context layout: root `CONTEXT.md` and `docs/adr/`.
-See `docs/agents/domain.md`.
+除非使用者明確同意，不得執行 git stage 更不能自動 git commit。
